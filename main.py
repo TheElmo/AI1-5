@@ -1,8 +1,9 @@
 import copy
+from collections import deque
 #Setup starting position
-# 0 5 2
-# 1 4 3
-# 7 8 6
+# 8 6 7 
+# 2 5 4 
+# 3 0 1
 # This position is 10 moves away from the desired position
 #Desired position
 # 1 2 3
@@ -23,30 +24,27 @@ def print_board(board_to_print):
 		print(row_string)
 	print("---")
 
-print_board(board)
-
 #This program is tested with the board above, but it should work on any N*N board
 def program():
-	print(move(board))
+	print("Solved in ", len(bfs(board))," moves")
 
-#Makes a choice for the best move
-def move(board_state_current, visited=[]):
-	#Append the current state to state's visited
-	visited.append(parse_board(board_state_current))
+def bfs(start_node):
+	visited = list()
+	queue = deque([start_node])
 
-	#Check if the desired board state is reached
-	if parse_board(board_state_current) == parse_board(des_board):
-		return [visited]
+	while len(queue) > 0:
+		node = queue.pop()
+		if parse_board(node) in visited:
+			continue
+		print_board(node)
+		visited.append(parse_board(node))
+		if parse_board(node) == parse_board(des_board):
+			return visited
 
-	paths = []
-
-	#Start the recursive search
-	for child in find_new_states(board_state_current):
-		if child not in visited:
-			new_paths = move(child, visited)
-			for new_path in new_paths:
-				paths.append(new_path)
-	return paths
+		for child in find_new_states(node):
+			if parse_board(child) not in visited:
+				queue.appendleft(child)
+	return False
 
 #Finds the possible new states of the board
 def find_new_states(board_state_current,visited=[]):
@@ -74,8 +72,6 @@ def find_new_states(board_state_current,visited=[]):
 
 	#For every way get the new board state if the number and 0 would be switched
 	#If a way is invalid (-1) the state would be False
-	print("Look around results:")
-	print("Up:",up,"Right:",right,"Down:",down,"Left:",left)
 	state1 = switch_num(zero_pos,up,board_state_current)
 	state2 = switch_num(zero_pos,down,board_state_current)
 	state3 = switch_num(zero_pos,right,board_state_current)
@@ -84,20 +80,19 @@ def find_new_states(board_state_current,visited=[]):
 
 	#If a state is not False, add it to new_states
 	new_states = []
-	print("posible new states:")
-	if state1: 
-		print_board(state1)
+	if state1 and parse_board(state1) not in visited: 
 		new_states.append(state1)
-	if state2: 
-		print_board(state2)
+	if state2 and parse_board(state2) not in visited: 
 		new_states.append(state2)
-	if state3: 
-		print_board(state3)
+	if state3 and parse_board(state3) not in visited: 
 		new_states.append(state3)
-	if state4: 
-		print_board(state4)
+	if state4 and parse_board(state4) not in visited: 
 		new_states.append(state4)
-	return new_states
+	if heurstic: 
+		successors = find_best_state(new_states)
+	else: 
+		successors = new_states.copy()
+	return successors
 
 #Switches the 0 with an adjecent number on the board (sliding)
 def switch_num(zero_pos,num_pos,old_board):
@@ -132,8 +127,43 @@ def check_visited(new_state):
 			return False
 	return True
 
+def get_heurstic_value(c_board):
+	current_board_num_dict = {}
+	des_board_num_dict = {}
+	for row in range(x):
+		for col in range(y):
+			current_board_num_dict[c_board[row][col]] = [row, col]
+			des_board_num_dict[des_board[row][col]] = [row, col]
+	total = 0
+	for num in current_board_num_dict:
+		row_pos = current_board_num_dict[num][0]
+		col_pos = current_board_num_dict[num][1]
+
+		des_row_pos = des_board_num_dict[num][0]
+		des_col_pos = des_board_num_dict[num][1]
+
+		hoz_moves = row_pos - des_row_pos
+		ver_moves = col_pos - des_col_pos
+		total += (abs(hoz_moves) + abs(ver_moves))
+	return total
 #Uses heurstic values to find the best ways
-def find_best_state():
-	pass
+def find_best_state(board_states):
+	best_h_val = -1
+	options = []
+	for board_state in board_states:
+		h_val = get_heurstic_value(board_state)
+		if best_h_val == -1:
+			best_h_val = h_val
+			options.append(board_state)
+
+		elif h_val == best_h_val:
+			best_h_val = h_val
+			options.append(board_state)
+
+		elif h_val < best_h_val:
+			best_h_val = h_val
+			options = []
+			options.append(board_state)
+	return options
 
 program()
